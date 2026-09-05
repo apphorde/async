@@ -11,7 +11,7 @@ Implemented:
 - Email/password accounts with bcrypt password hashes and 30-day revocable sessions.
 - Android login, device registration, SHA-256 file scanning, direct streaming upload, immutable versions, and server verification.
 - Per-folder seven-day automatic deletion after successful remote verification.
-- A persistent foreground sync service plus Wi-Fi-only WorkManager recovery every six hours.
+- A one-shot foreground sync service plus Wi-Fi-only WorkManager synchronization every 15 minutes.
 - Browser sign-in, folder browsing, version history, and downloads.
 - A self-contained Go server with FileBin, filesystem, and MinIO/S3 blob backends; atomic staging/commit; path validation; and an end-to-end test.
 
@@ -83,7 +83,7 @@ In the app:
 4. Start sync and allow notifications.
 5. In OxygenOS, set battery use to Unrestricted, permit auto-launch/background activity where offered, and do not task-kill the app.
 
-The foreground notification represents the active sync loop. The scheduled Wi-Fi worker recovers periodic reconciliation if the foreground process is killed.
+The foreground notification is shown only during a manual sync. Android limits long-running data-sync foreground services, so the scheduled Wi-Fi worker provides the supported ongoing synchronization mechanism. OxygenOS battery restrictions can still delay scheduled work.
 
 ## Upload protocol
 

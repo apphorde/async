@@ -13,6 +13,7 @@ import java.util.ArrayDeque;
 
 class SyncEngine {
     static final long DELETE_AFTER_MS = 7L * 24 * 60 * 60 * 1000;
+    static final long FULL_HASH_INTERVAL_MS = 24L * 60 * 60 * 1000;
     interface Reporter { void status(String value); }
     static void run(Context context, Reporter reporter) throws Exception {
         AppSettings settings = new AppSettings(context);
@@ -39,8 +40,12 @@ class SyncEngine {
         }
     }
     private static void syncFile(ApiClient api, AppSettings settings, String root, String path, File file, Reporter reporter) throws Exception {
-        String key = "file_" + Base64.encodeToString(path.getBytes(), Base64.NO_WRAP);
-        String hash = hash(file); SharedPreferences prefs = settings.raw(); String known = prefs.getString(key + "_hash", "");
+        String key = "file_" + Base64.encodeToString(path.getBytes(java.nio.charset.StandardCharsets.UTF_8), Base64.NO_WRAP);
+        SharedPreferences prefs = settings.raw(); String known = prefs.getString(key + "_hash", "");
+        long now = System.currentTimeMillis();
+        boolean metadataChanged = prefs.getLong(key + "_size", -1) != file.length() || prefs.getLong(key + "_modified", -1) != file.lastModified();
+        boolean mustHash = metadataChanged || known.isEmpty() || now - prefs.getLong(key + "_hashed", 0) >= FULL_HASH_INTERVAL_MS;
+        String hash = mustHash ? hash(file) : known;
         if (!hash.equals(known)) {
             reporter.status("Uploading " + path);
             JSONObject prepared = api.post("/api/uploads/prepare", new JSONObject().put("path", path).put("size", file.length()).put("sha256", hash).put("device_id", settings.deviceId()));
@@ -48,16 +53,19 @@ class SyncEngine {
             api.post(prepared.getString("commit_url"), new JSONObject());
             JSONObject verified = api.get("/api/verify?path=" + java.net.URLEncoder.encode(path, "UTF-8"));
             if (!verified.optBoolean("ok") || !hash.equals(verified.optString("sha256"))) throw new Exception("remote verification failed for " + path);
-            prefs.edit().putString(key + "_hash", hash).putLong(key + "_verified", System.currentTimeMillis()).apply();
+            prefs.edit().putString(key + "_hash", hash).putLong(key + "_verified", now).putLong(key + "_size", file.length()).putLong(key + "_modified", file.lastModified()).putLong(key + "_hashed", now).apply();
             return;
         }
+        if (mustHash) prefs.edit().putLong(key + "_size", file.length()).putLong(key + "_modified", file.lastModified()).putLong(key + "_hashed", now).apply();
         long verified = prefs.getLong(key + "_verified", 0);
         if (settings.autoDelete(root) && verified > 0 && System.currentTimeMillis() - verified >= DELETE_AFTER_MS) {
+            // Metadata is fast change detection; deletion requires byte-level confirmation.
+            hash = hash(file);
             JSONObject remote = api.get("/api/verify?path=" + java.net.URLEncoder.encode(path, "UTF-8"));
             if (remote.optBoolean("ok") && hash.equals(remote.optString("sha256"))) {
                 reporter.status("Deleting verified file " + path);
                 if (!file.delete()) throw new Exception("could not delete " + path);
-                prefs.edit().remove(key + "_hash").remove(key + "_verified").apply();
+                prefs.edit().remove(key + "_hash").remove(key + "_verified").remove(key + "_size").remove(key + "_modified").remove(key + "_hashed").apply();
             }
         }
     }

@@ -114,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
         if (new AppSettings(this).token().isEmpty()) { status.setText("Sign in before starting sync."); return; }
         startService(new Intent(this, SyncService.class));
         SyncScheduler.schedule(this);
-        status.setText("Sync service started. Keep its notification enabled.");
+        status.setText("Sync started. Future Wi-Fi syncs are scheduled every 15 minutes.");
     }
 
     private void showError(Exception error) {
