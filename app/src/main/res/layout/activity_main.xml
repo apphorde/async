@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Reader Vault" android:textSize="28sp" android:textStyle="bold" />
+        <TextView android:id="@+id/permission_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" />
+        <Button android:id="@+id/grant_storage" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Grant all-files access" />
+        <EditText android:id="@+id/server_url" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="https://vault.example.com" android:inputType="textUri" />
+        <EditText android:id="@+id/email" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Email" android:inputType="textEmailAddress" />
+        <EditText android:id="@+id/password" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Password (12-72 characters)" android:inputType="textPassword" android:maxLength="72" />
+        <Button android:id="@+id/sign_in" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sign in" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:text="Sync folders" android:textStyle="bold" />
+        <CheckBox android:id="@+id/folder_dcim" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="DCIM" />
+        <CheckBox android:id="@+id/delete_dcim" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Auto-delete DCIM after 7 verified days" />
+        <CheckBox android:id="@+id/folder_download" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Download" />
+        <CheckBox android:id="@+id/delete_download" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Auto-delete Download after 7 verified days" />
+        <CheckBox android:id="@+id/folder_pictures" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pictures" />
+        <CheckBox android:id="@+id/delete_pictures" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Auto-delete Pictures after 7 verified days" />
+        <CheckBox android:id="@+id/folder_movies" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Movies" />
+        <CheckBox android:id="@+id/delete_movies" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Auto-delete Movies after 7 verified days" />
+        <Button android:id="@+id/save_folders" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Save folders" />
+        <Button android:id="@+id/sync_now" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sync now and schedule Wi-Fi sync" />
+        <TextView android:id="@+id/status" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" />
+    </LinearLayout>
+</ScrollView>
