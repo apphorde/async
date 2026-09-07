@@ -14,7 +14,7 @@ Implemented:
 - All-files access settings flow and notification permission request.
 - Selectable preset roots: `DCIM`, `Download`, `Pictures`, and `Movies`.
 - Recursive file scanning with hidden-file and hidden-directory exclusion.
-- SHA-256 hashing, streaming upload, remote commit, and remote verification.
+- SHA-256 hashing, resumable chunked upload, remote commit, and remote verification.
 - Immutable server-side versions when a file changes.
 - Per-root seven-day automatic deletion after successful verification.
 - One-shot foreground sync for manual runs.

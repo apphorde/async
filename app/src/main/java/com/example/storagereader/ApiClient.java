@@ -8,6 +8,8 @@ import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.MessageDigest;
+import android.util.Base64;
 
 class ApiClient {
     private final String baseUrl, token;
@@ -23,6 +25,23 @@ class ApiClient {
             while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
         }
         if (c.getResponseCode() / 100 != 2) throw new Exception("upload failed (HTTP " + c.getResponseCode() + ")");
+        c.disconnect();
+    }
+    void putFilePart(String path, File file, long offset, long length) throws Exception {
+        byte[] part = new byte[(int) length];
+        try (java.io.RandomAccessFile input = new java.io.RandomAccessFile(file, "r")) {
+            input.seek(offset);
+            input.readFully(part);
+        }
+        byte[] digest = MessageDigest.getInstance("SHA-256").digest(part);
+        HttpURLConnection c = connection("PUT", path);
+        c.setFixedLengthStreamingMode(part.length);
+        c.setRequestProperty("Content-Range", "bytes " + offset + "-" + (offset + length - 1) + "/" + file.length());
+        c.setRequestProperty("Digest", "sha-256=" + Base64.encodeToString(digest, Base64.NO_WRAP));
+        c.setDoOutput(true);
+        try (OutputStream out = c.getOutputStream()) { out.write(part); }
+        int code = c.getResponseCode();
+        if (code / 100 != 2) throw new Exception("upload part failed (HTTP " + code + ")");
         c.disconnect();
     }
     private JSONObject request(String method, String path, byte[] body) throws Exception {

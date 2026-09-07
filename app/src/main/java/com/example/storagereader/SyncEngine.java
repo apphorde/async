@@ -48,9 +48,32 @@ class SyncEngine {
         String hash = mustHash ? hash(file) : known;
         if (!hash.equals(known)) {
             reporter.status("Uploading " + path);
-            JSONObject prepared = api.post("/api/uploads/prepare", new JSONObject().put("path", path).put("size", file.length()).put("sha256", hash).put("device_id", settings.deviceId()));
-            api.putFile(prepared.getString("upload_url"), file);
+            String pendingID = prefs.getString(key + "_upload_id", "");
+            JSONObject prepared = null;
+            if (!pendingID.isEmpty()) {
+                try {
+                    prepared = new JSONObject().put("upload_id", pendingID)
+                            .put("upload_url", "/api/uploads/" + pendingID + "/content")
+                            .put("commit_url", "/api/uploads/" + pendingID + "/commit");
+                    JSONObject state = api.get(prepared.getString("upload_url"));
+                    if (state.getLong("size") != file.length()) prepared = null;
+                } catch (Exception ignored) { prepared = null; }
+            }
+            if (prepared == null) {
+                prepared = api.post("/api/uploads/prepare", new JSONObject().put("path", path).put("size", file.length()).put("sha256", hash).put("device_id", settings.deviceId()));
+                prefs.edit().putString(key + "_upload_id", prepared.getString("upload_id")).apply();
+            }
+            String uploadURL = prepared.getString("upload_url");
+            JSONObject uploadState = api.get(uploadURL);
+            long offset = uploadState.getLong("received");
+            while (offset < file.length()) {
+                long length = Math.min(8L * 1024 * 1024, file.length() - offset);
+                api.putFilePart(uploadURL, file, offset, length);
+                uploadState = api.get(uploadURL);
+                offset = uploadState.getLong("received");
+            }
             api.post(prepared.getString("commit_url"), new JSONObject());
+            prefs.edit().remove(key + "_upload_id").apply();
             JSONObject verified = api.get("/api/verify?path=" + java.net.URLEncoder.encode(path, "UTF-8"));
             if (!verified.optBoolean("ok") || !hash.equals(verified.optString("sha256"))) throw new Exception("remote verification failed for " + path);
             prefs.edit().putString(key + "_hash", hash).putLong(key + "_verified", now).putLong(key + "_size", file.length()).putLong(key + "_modified", file.lastModified()).putLong(key + "_hashed", now).apply();
