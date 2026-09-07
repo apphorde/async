@@ -11,7 +11,7 @@ import java.net.URL;
 
 class ApiClient {
     private final String baseUrl, token;
-    ApiClient(String baseUrl, String token) { this.baseUrl = baseUrl; this.token = token; }
+    ApiClient(String baseUrl, String token) { this.baseUrl = baseUrl.replaceAll("/+$", ""); this.token = token; }
     ApiClient withToken(String value) { return new ApiClient(baseUrl, value); }
     JSONObject post(String path, JSONObject body) throws Exception { return request("POST", path, body.toString().getBytes()); }
     JSONObject get(String path) throws Exception { return request("GET", path, null); }

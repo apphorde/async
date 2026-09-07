@@ -23,14 +23,14 @@ Implemented:
 
 The server is maintained in the separate `async-server` repository. Its current interim storage backend is a password-protected FileBin bin; filesystem and MinIO/S3 backends are also available.
 
-The Android client is a prototype and has not yet been validated on a real OxygenOS device in this workspace. The Android Gradle build was blocked here by a local Gradle daemon IPC failure, not by a reported Java compilation error.
+The Android client is a prototype and has not yet been validated on a real OxygenOS device in this workspace. The Android build uses Android Gradle Plugin 8.13.2 and Gradle 8.14.4, and runs on Java 25.
 
 ## Build And Install
 
-### Requirements
+### Local Requirements
 
 - Android SDK with API 34 platform and build tools.
-- Java 17 or 21.
+- Java 25.
 - Gradle wrapper access to `gradle-8.14.4`.
 - A USB-debuggable Android 11+ device or emulator.
 - `adb` on `PATH`.
@@ -42,6 +42,50 @@ git clone git@github.com:apphorde/async.git
 cd async
 ./gradlew assembleDebug
 ```
+
+### Docker Build
+
+The pinned Docker build image includes Java 25, Gradle's required runtime, and
+the Android 34 SDK components. Only Docker is required on the host:
+
+```sh
+docker build -t storage-reader-android-build .
+docker run --rm \
+  --volume "$PWD:/workspace" \
+  --workdir /workspace \
+  storage-reader-android-build \
+  assembleDebug --no-daemon
+```
+
+For CI, keep the stable debug keystore outside Git and run `bash build-apk.sh`
+with `ANDROID_DEBUG_KEYSTORE_FILE` and optionally
+`ANDROID_DEBUG_KEYSTORE_PASSWORD` set.
+
+### Stable Debug Signing Key
+
+The APK must keep the same signing key for Android to accept updates. Generate
+the keystore once if it is missing, then store the resulting binary file as a
+private CI secret and reuse it for every build:
+
+```sh
+docker run --rm \
+  --entrypoint keytool \
+  --volume "$PWD:/workspace" \
+  eclipse-temurin:25-jdk-jammy \
+  -genkeypair -v \
+  -keystore /workspace/reader-vault-debug.keystore \
+  -storepass android \
+  -keypass android \
+  -alias androiddebugkey \
+  -dname 'CN=Android Debug,O=Android,C=US' \
+  -keyalg RSA \
+  -keysize 2048 \
+  -validity 10000
+```
+
+The build script expects alias `androiddebugkey` and password `android` by
+default. `/run/secrets/reader-vault-debug.keystore` is only an example path
+inside the CI container; it does not need to exist on the development host.
 
 The APK is written to `app/build/outputs/apk/debug/app-debug.apk`. Install it with:
 
