@@ -1,6 +1,6 @@
-# Reader Vault Android Client
+# ASync Android Client
 
-Reader Vault is a minimal, one-way Android backup client for the Reader Vault server. It is deliberately narrower than Dropbox: Android uploads selected shared-storage folders, the server retains immutable file versions, and the browser lets the account owner browse, inspect history, and download files.
+ASync is a minimal, one-way Android sync client for the Reader Vault server. It is deliberately narrower than Dropbox: Android uploads selected shared-storage folders, the server retains immutable file versions, and the browser lets the account owner browse, inspect history, and download files.
 
 The current prototype supports `DCIM`, `Download`, `Pictures`, and `Movies` on Android 11+. It needs Android's **All files access** special permission. It cannot read other apps' private `/data/data` storage on an unrooted device.
 

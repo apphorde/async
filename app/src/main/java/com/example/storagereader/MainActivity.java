@@ -60,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
         AppSettings settings = new AppSettings(this);
         ((EditText) findViewById(R.id.server_url)).setText(settings.serverUrl());
         ((EditText) findViewById(R.id.email)).setText(settings.email());
+        status.setText(settings.lastSyncStatus());
         ((CheckBox) findViewById(R.id.folder_dcim)).setChecked(settings.enabled("DCIM"));
         ((CheckBox) findViewById(R.id.folder_download)).setChecked(settings.enabled("Download"));
         ((CheckBox) findViewById(R.id.folder_pictures)).setChecked(settings.enabled("Pictures"));
