@@ -21,4 +21,4 @@ RUN apt-get update \
 
 WORKDIR /workspace
 
-ENTRYPOINT ["./gradlew"]
+ENTRYPOINT ["/bin/sh"]
