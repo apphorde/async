@@ -134,7 +134,7 @@ The Android app currently expects the server API to be available at the URL ente
 The following features are not implemented yet:
 
 - Real-device/OxygenOS validation and release signing.
-- Upload resume, multipart transfer, and bandwidth throttling.
+- Bandwidth throttling and parallel upload scheduling.
 - MediaStore/file observer event ingestion; periodic scanning remains the source of truth.
 - Custom folder selection through the Storage Access Framework.
 - Additional user-configurable roots and exclusion rules.
@@ -146,7 +146,7 @@ The following features are not implemented yet:
 - Server restore-to-device support.
 - Photo/video previews, thumbnails, search, EXIF extraction, OCR, tags, people, and invoice processing.
 - Client-side envelope encryption.
-- Presigned multipart uploads. The prototype streams through the Reader Vault API; the server stores committed bytes in FileBin.
+- Presigned direct-to-FileBin uploads; the client uploads resumable chunks through the Reader Vault API.
 - Server PostgreSQL metadata, rate limiting, password reset, audit logs, and multi-instance support.
 
 The current deletion behavior is intentionally conservative about remote verification but irreversible locally. Treat auto-delete as a backup policy, test it with a nonessential folder first, and ensure the server/FileBin data is backed up.
@@ -185,7 +185,7 @@ All API calls use `Authorization: Bearer <login token>` after login.
 1. `POST /api/login` authenticates the Android client.
 2. `POST /api/devices` creates a device record.
 3. `POST /api/uploads/prepare` receives device ID, relative POSIX path, byte size, and lowercase SHA-256.
-4. `PUT upload_url` streams the exact file bytes to staging.
+4. `GET upload_url` reads the received byte offset, then send sequential `PUT upload_url` chunks with `Content-Range` and a base64 SHA-256 `Digest`; repeat after interruptions.
 5. `POST commit_url` atomically makes a new immutable version.
 6. `GET /api/verify?path=...` rehashes the latest committed blob. Only then does the client record its seven-day deletion clock.
 
