@@ -54,7 +54,7 @@ docker run --rm \
   --volume "$PWD:/workspace" \
   --workdir /workspace \
   storage-reader-android-build \
-  assembleDebug --no-daemon
+  ./gradlew assembleDebug --no-daemon
 ```
 
 For CI, keep the stable debug keystore outside Git and run `bash build-apk.sh`

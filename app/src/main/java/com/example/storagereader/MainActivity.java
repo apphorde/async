@@ -1,6 +1,7 @@
 package com.example.storagereader;
 
 import android.content.Intent;
+import android.content.ActivityNotFoundException;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -38,15 +39,39 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.sign_in).setOnClickListener(v -> signIn());
         findViewById(R.id.sync_now).setOnClickListener(v -> startSync());
         findViewById(R.id.save_folders).setOnClickListener(v -> saveFolders());
+        findViewById(R.id.clear_debug_log).setOnClickListener(v -> {
+            DebugLog.clear(this);
+            refreshDebugLog();
+        });
         updatePermissionStatus();
+        refreshDebugLog();
     }
 
     @Override protected void onResume() { super.onResume(); updatePermissionStatus(); }
 
     private void requestStorage() {
-        Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
-        intent.setData(Uri.parse("package:" + getPackageName()));
-        startActivity(intent);
+        if (Environment.isExternalStorageManager()) {
+            status.setText("All-files access is already enabled.");
+            DebugLog.add(this, "All-files access already enabled");
+            return;
+        }
+        try {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+            intent.setData(Uri.parse("package:" + getPackageName()));
+            startActivity(intent);
+            DebugLog.add(this, "Opened all-files access settings");
+        } catch (ActivityNotFoundException first) {
+            try {
+                startActivity(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION));
+                DebugLog.add(this, "Opened general all-files access settings");
+            } catch (Exception error) {
+                status.setText("Open Android Settings > Special app access > All files access, then enable ASync.");
+                DebugLog.add(this, "Could not open all-files settings: " + error);
+            }
+        } catch (Exception error) {
+            status.setText("Open Android Settings > Special app access > All files access, then enable ASync.");
+            DebugLog.add(this, "Could not open app all-files settings: " + error);
+        }
     }
 
     private void updatePermissionStatus() {
@@ -54,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
         permission.setText(Environment.isExternalStorageManager()
                 ? "All-files access is enabled."
                 : "All-files access is required to scan selected folders.");
+        refreshDebugLog();
     }
 
     private void restoreSettings() {
@@ -80,6 +106,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         status.setText("Signing in...");
+        DebugLog.add(this, "Sign-in started for " + url);
         executor.execute(() -> {
             try {
                 ApiClient api = new ApiClient(url, null);
@@ -92,7 +119,8 @@ public class MainActivity extends AppCompatActivity {
                     settings.saveDeviceId(device.getString("ID"));
                 }
                 runOnUiThread(() -> status.setText("Signed in. Select folders and start sync."));
-            } catch (Exception e) { showError(e); }
+                DebugLog.add(this, "Sign-in succeeded");
+            } catch (Exception e) { DebugLog.add(this, "Sign-in failed: " + e.getMessage()); showError(e); }
         });
     }
 
@@ -120,5 +148,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void showError(Exception error) {
         runOnUiThread(() -> status.setText("Error: " + error.getMessage()));
+    }
+
+    private void refreshDebugLog() {
+        TextView log = findViewById(R.id.debug_log);
+        if (log != null) log.setText(DebugLog.read(this));
     }
 }

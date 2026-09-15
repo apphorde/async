@@ -20,7 +20,7 @@ docker run --rm \
     --workdir /workspace \
     --env ANDROID_DEBUG_KEYSTORE=/run/secrets/reader-vault-debug.keystore \
     --env ANDROID_DEBUG_KEYSTORE_PASSWORD="$KEYSTORE_PASSWORD" \
-    "$IMAGE" assembleDebug --no-daemon
+    "$IMAGE" ./gradlew assembleDebug --no-daemon
 
 test -s "$APK"
 docker run --rm \

@@ -19,11 +19,13 @@ public class SyncService extends Service {
             try {
                 SyncEngine.run(this, text -> {
                     settings.saveLastSyncStatus(text);
+                    DebugLog.add(this, text);
                     getSystemService(NotificationManager.class).notify(1, notification(text));
                 });
             } catch (Exception e) {
                 String message = "Sync failed: " + e.getMessage();
                 settings.saveLastSyncStatus(message);
+                DebugLog.add(this, message);
                 Log.e("ASync", message, e);
                 getSystemService(NotificationManager.class).notify(1, notification(message));
             } finally { stopSelf(startId); }
