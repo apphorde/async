@@ -23,7 +23,13 @@ class AppSettings {
     String lastSyncStatus() { return preferences.getString("last_sync_status", ""); }
     boolean enabled(String folder) { return preferences.getBoolean("folder_" + folder, folder.equals("DCIM")); }
     boolean autoDelete(String folder) { return preferences.getBoolean("delete_" + folder, false); }
-    void saveLogin(String url, String email, String token) { preferences.edit().putString("server_url", url.replaceAll("/+$", "")).putString("email", email).putString("token", token).apply(); }
+    void saveLogin(String url, String email, String token) {
+        String normalizedUrl = url.replaceAll("/+$", "");
+        boolean accountChanged = !normalizedUrl.equals(serverUrl()) || !email.equals(this.email());
+        SharedPreferences.Editor editor = preferences.edit().putString("server_url", normalizedUrl).putString("email", email).putString("token", token);
+        if (accountChanged) editor.remove("device_id");
+        editor.apply();
+    }
     void saveDeviceId(String id) { preferences.edit().putString("device_id", id).apply(); }
     void saveLastSyncStatus(String status) { preferences.edit().putString("last_sync_status", status).apply(); }
     void saveFolder(String folder, boolean enabled, boolean delete) { preferences.edit().putBoolean("folder_" + folder, enabled).putBoolean("delete_" + folder, delete).apply(); }

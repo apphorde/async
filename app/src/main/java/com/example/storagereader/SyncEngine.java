@@ -21,11 +21,11 @@ class SyncEngine {
         ApiClient api = new ApiClient(settings.serverUrl(), settings.token());
         for (String root : new String[]{"DCIM", "Download", "Pictures", "Movies"}) {
             if (!settings.enabled(root)) continue;
-            scan(api, settings, root, reporter);
+            scan(context, api, settings, root, reporter);
         }
         reporter.status("Sync complete");
     }
-    private static void scan(ApiClient api, AppSettings settings, String root, Reporter reporter) throws Exception {
+    private static void scan(Context context, ApiClient api, AppSettings settings, String root, Reporter reporter) throws Exception {
         File folder = Environment.getExternalStoragePublicDirectory(root);
         if (!folder.isDirectory()) return;
         ArrayDeque<File> pending = new ArrayDeque<>(); pending.add(folder);
@@ -35,11 +35,11 @@ class SyncEngine {
                 if (file.isDirectory()) { if (!file.getName().startsWith(".")) pending.add(file); continue; }
                 if (!file.isFile() || file.getName().startsWith(".")) continue;
                 String relative = root + "/" + file.getAbsolutePath().substring(folder.getAbsolutePath().length() + 1).replace(File.separatorChar, '/');
-                syncFile(api, settings, root, relative, file, reporter);
+                syncFile(context, api, settings, root, relative, file, reporter);
             }
         }
     }
-    private static void syncFile(ApiClient api, AppSettings settings, String root, String path, File file, Reporter reporter) throws Exception {
+    private static void syncFile(Context context, ApiClient api, AppSettings settings, String root, String path, File file, Reporter reporter) throws Exception {
         String key = "file_" + Base64.encodeToString(path.getBytes(java.nio.charset.StandardCharsets.UTF_8), Base64.NO_WRAP);
         SharedPreferences prefs = settings.raw(); String known = prefs.getString(key + "_hash", "");
         long now = System.currentTimeMillis();
@@ -60,7 +60,14 @@ class SyncEngine {
                 } catch (Exception ignored) { prepared = null; }
             }
             if (prepared == null) {
-                prepared = api.post("/api/uploads/prepare", new JSONObject().put("path", path).put("size", file.length()).put("sha256", hash).put("device_id", settings.deviceId()));
+                try {
+                    prepared = prepare(api, settings, path, file.length(), hash);
+                } catch (Exception error) {
+                    if (!String.valueOf(error.getMessage()).contains("unknown device")) throw error;
+                    DebugLog.add(context, "Device was rejected; registering a replacement device");
+                    registerDevice(api, settings);
+                    prepared = prepare(api, settings, path, file.length(), hash);
+                }
                 prefs.edit().putString(key + "_upload_id", prepared.getString("upload_id")).apply();
             }
             String uploadURL = prepared.getString("upload_url");
@@ -91,6 +98,13 @@ class SyncEngine {
                 prefs.edit().remove(key + "_hash").remove(key + "_verified").remove(key + "_size").remove(key + "_modified").remove(key + "_hashed").apply();
             }
         }
+    }
+    private static JSONObject prepare(ApiClient api, AppSettings settings, String path, long size, String hash) throws Exception {
+        return api.post("/api/uploads/prepare", new JSONObject().put("path", path).put("size", size).put("sha256", hash).put("device_id", settings.deviceId()));
+    }
+    private static void registerDevice(ApiClient api, AppSettings settings) throws Exception {
+        JSONObject device = api.post("/api/devices", new JSONObject().put("name", android.os.Build.MODEL).put("platform", "android"));
+        settings.saveDeviceId(device.getString("ID"));
     }
     private static String hash(File file) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256"); byte[] buffer = new byte[64 * 1024]; int n;
