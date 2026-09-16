@@ -9,6 +9,11 @@
         <EditText android:id="@+id/password" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Password (12-72 characters)" android:inputType="textPassword" android:maxLength="72" />
         <Button android:id="@+id/sign_in" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sign in" />
         <TextView android:id="@+id/status" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+            <Button android:id="@+id/export_settings" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Export settings" />
+            <Button android:id="@+id/import_settings" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Import settings" />
+        </LinearLayout>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Exported settings include the password as plaintext." android:textSize="12sp" />
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:text="Sync folders" android:textStyle="bold" />
         <CheckBox android:id="@+id/folder_dcim" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="DCIM" />
         <CheckBox android:id="@+id/delete_dcim" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="24dp" android:text="Auto-delete DCIM after 7 verified days" android:textSize="12sp" />

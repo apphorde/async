@@ -22,8 +22,13 @@ import org.json.JSONObject;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends AppCompatActivity {
+    private static final int REQUEST_EXPORT_SETTINGS = 10;
+    private static final int REQUEST_IMPORT_SETTINGS = 11;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private TextView status;
 
@@ -43,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
             DebugLog.clear(this);
             refreshDebugLog();
         });
+        findViewById(R.id.export_settings).setOnClickListener(v -> exportSettings());
+        findViewById(R.id.import_settings).setOnClickListener(v -> importSettings());
         updatePermissionStatus();
         refreshDebugLog();
     }
@@ -122,6 +129,77 @@ public class MainActivity extends AppCompatActivity {
                 DebugLog.add(this, "Sign-in succeeded");
             } catch (Exception e) { DebugLog.add(this, "Sign-in failed: " + e.getMessage()); showError(e); }
         });
+    }
+
+    private void exportSettings() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.setType("application/json");
+        intent.putExtra(Intent.EXTRA_TITLE, "async-settings.json");
+        startActivityForResult(intent, REQUEST_EXPORT_SETTINGS);
+    }
+
+    private void importSettings() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.setType("application/json");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        startActivityForResult(intent, REQUEST_IMPORT_SETTINGS);
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
+        try {
+            if (requestCode == REQUEST_EXPORT_SETTINGS) {
+                JSONObject settings = new JSONObject();
+                settings.put("server_url", ((EditText) findViewById(R.id.server_url)).getText().toString().trim());
+                settings.put("email", ((EditText) findViewById(R.id.email)).getText().toString().trim());
+                settings.put("password", ((EditText) findViewById(R.id.password)).getText().toString());
+                settings.put("folders", folderSettings(false));
+                settings.put("auto_delete", folderSettings(true));
+                try (OutputStream output = getContentResolver().openOutputStream(data.getData())) {
+                    if (output == null) throw new Exception("could not open export file");
+                    output.write(settings.toString(2).getBytes(StandardCharsets.UTF_8));
+                }
+                status.setText("Settings exported. The file contains your password in plaintext.");
+                DebugLog.add(this, "Settings exported");
+            } else if (requestCode == REQUEST_IMPORT_SETTINGS) {
+                StringBuilder content = new StringBuilder();
+                try (InputStream input = getContentResolver().openInputStream(data.getData())) {
+                    if (input == null) throw new Exception("could not open import file");
+                    byte[] buffer = new byte[4096]; int count;
+                    while ((count = input.read(buffer)) != -1) content.append(new String(buffer, 0, count, StandardCharsets.UTF_8));
+                }
+                JSONObject settings = new JSONObject(content.toString());
+                ((EditText) findViewById(R.id.server_url)).setText(settings.optString("server_url", ""));
+                ((EditText) findViewById(R.id.email)).setText(settings.optString("email", ""));
+                ((EditText) findViewById(R.id.password)).setText(settings.optString("password", ""));
+                applyFolderSettings(settings.optJSONObject("folders"), false);
+                applyFolderSettings(settings.optJSONObject("auto_delete"), true);
+                saveFolders();
+                status.setText("Settings imported. Sign in to use the imported account.");
+                DebugLog.add(this, "Settings imported");
+            }
+        } catch (Exception error) {
+            status.setText("Settings transfer failed: " + error.getMessage());
+            DebugLog.add(this, "Settings transfer failed: " + error.getMessage());
+        }
+    }
+
+    private JSONObject folderSettings(boolean autoDelete) throws Exception {
+        JSONObject result = new JSONObject();
+        result.put("DCIM", ((CheckBox) findViewById(autoDelete ? R.id.delete_dcim : R.id.folder_dcim)).isChecked());
+        result.put("Download", ((CheckBox) findViewById(autoDelete ? R.id.delete_download : R.id.folder_download)).isChecked());
+        result.put("Pictures", ((CheckBox) findViewById(autoDelete ? R.id.delete_pictures : R.id.folder_pictures)).isChecked());
+        result.put("Movies", ((CheckBox) findViewById(autoDelete ? R.id.delete_movies : R.id.folder_movies)).isChecked());
+        return result;
+    }
+
+    private void applyFolderSettings(JSONObject values, boolean autoDelete) {
+        if (values == null) return;
+        ((CheckBox) findViewById(autoDelete ? R.id.delete_dcim : R.id.folder_dcim)).setChecked(values.optBoolean("DCIM", false));
+        ((CheckBox) findViewById(autoDelete ? R.id.delete_download : R.id.folder_download)).setChecked(values.optBoolean("Download", false));
+        ((CheckBox) findViewById(autoDelete ? R.id.delete_pictures : R.id.folder_pictures)).setChecked(values.optBoolean("Pictures", false));
+        ((CheckBox) findViewById(autoDelete ? R.id.delete_movies : R.id.folder_movies)).setChecked(values.optBoolean("Movies", false));
     }
 
     private void saveFolders() {
