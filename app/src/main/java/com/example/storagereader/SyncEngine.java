@@ -63,7 +63,8 @@ class SyncEngine {
                 try {
                     prepared = prepare(api, settings, path, file.length(), hash);
                 } catch (Exception error) {
-                    if (!String.valueOf(error.getMessage()).contains("unknown device")) throw error;
+                    String errorMessage = String.valueOf(error.getMessage()).toLowerCase(java.util.Locale.US);
+                    if (!errorMessage.contains("device")) throw error;
                     DebugLog.add(context, "Device was rejected; registering a replacement device");
                     registerDevice(api, settings);
                     prepared = prepare(api, settings, path, file.length(), hash);
@@ -104,7 +105,9 @@ class SyncEngine {
     }
     private static void registerDevice(ApiClient api, AppSettings settings) throws Exception {
         JSONObject device = api.post("/api/devices", new JSONObject().put("name", android.os.Build.MODEL).put("platform", "android"));
-        settings.saveDeviceId(device.getString("ID"));
+        String deviceId = device.optString("ID", device.optString("id", ""));
+        if (deviceId.isEmpty()) throw new Exception("device registration returned no device ID");
+        settings.saveDeviceId(deviceId);
     }
     private static String hash(File file) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256"); byte[] buffer = new byte[64 * 1024]; int n;

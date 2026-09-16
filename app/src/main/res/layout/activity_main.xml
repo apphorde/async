@@ -26,9 +26,9 @@
         <Button android:id="@+id/save_folders" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Save folders" />
         <Button android:id="@+id/sync_now" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sync now and schedule Wi-Fi sync" />
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:text="Debug log" android:textStyle="bold" />
-        <ScrollView android:layout_width="match_parent" android:layout_height="160dp" android:layout_marginTop="8dp" android:background="?android:attr/colorBackground" android:padding="8dp">
+        <androidx.core.widget.NestedScrollView android:id="@+id/debug_log_scroll" android:layout_width="match_parent" android:layout_height="160dp" android:layout_marginTop="8dp" android:background="?android:attr/colorBackground" android:fillViewport="true" android:nestedScrollingEnabled="true" android:padding="8dp">
             <TextView android:id="@+id/debug_log" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="?android:attr/textColorPrimary" android:textSize="11sp" android:textIsSelectable="true" />
-        </ScrollView>
+        </androidx.core.widget.NestedScrollView>
         <Button android:id="@+id/clear_debug_log" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Clear debug log" />
     </LinearLayout>
 </ScrollView>

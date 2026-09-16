@@ -13,6 +13,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ScrollView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -123,7 +124,9 @@ public class MainActivity extends AppCompatActivity {
                 if (settings.deviceId().isEmpty()) {
                     JSONObject device = api.withToken(response.getString("token")).post("/api/devices",
                             new JSONObject().put("name", android.os.Build.MODEL).put("platform", "android"));
-                    settings.saveDeviceId(device.getString("ID"));
+                    String deviceId = device.optString("ID", device.optString("id", ""));
+                    if (deviceId.isEmpty()) throw new Exception("device registration returned no device ID");
+                    settings.saveDeviceId(deviceId);
                 }
                 runOnUiThread(() -> status.setText("Signed in. Select folders and start sync."));
                 DebugLog.add(this, "Sign-in succeeded");
@@ -230,6 +233,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void refreshDebugLog() {
         TextView log = findViewById(R.id.debug_log);
+        ScrollView scroll = findViewById(R.id.debug_log_scroll);
         if (log != null) log.setText(DebugLog.read(this));
+        if (scroll != null) scroll.post(() -> scroll.fullScroll(View.FOCUS_DOWN));
     }
 }
