@@ -13,7 +13,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ScrollView;
+import android.text.method.ScrollingMovementMethod;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -233,8 +233,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void refreshDebugLog() {
         TextView log = findViewById(R.id.debug_log);
-        ScrollView scroll = findViewById(R.id.debug_log_scroll);
-        if (log != null) log.setText(DebugLog.read(this));
-        if (scroll != null) scroll.post(() -> scroll.fullScroll(View.FOCUS_DOWN));
+        if (log != null) {
+            log.setText(DebugLog.read(this));
+            log.setMovementMethod(ScrollingMovementMethod.getInstance());
+            log.post(() -> log.scrollTo(0, log.getBottom()));
+        }
     }
 }
