@@ -8,7 +8,7 @@ The current prototype supports `DCIM`, `Download`, `Pictures`, and `Movies` on A
 
 Implemented:
 
-- HTTPS server URL and email/password login.
+- HTTPS server URL and one-time browser pairing token.
 - Android device registration and bearer-token authentication.
 - Android Keystore-backed encrypted preferences for the server token and settings.
 - All-files access settings flow and notification permission request.
@@ -19,7 +19,7 @@ Implemented:
 - Per-root seven-day automatic deletion after successful verification.
 - One-shot foreground sync for manual runs.
 - Wi-Fi-only WorkManager reconciliation every 15 minutes.
-- Server-side browser login, folder browsing, version history, and downloads.
+- Server-side browser login and device pairing; file browsing is handled by FileBin.
 
 The server is maintained in the separate `async-server` repository. Its current interim storage backend is a password-protected FileBin bin; filesystem and MinIO/S3 backends are also available.
 
@@ -115,7 +115,7 @@ Run unit tests with:
 1. Deploy the separate `async-server` repository at a public HTTPS URL.
 2. Open the server web UI and register the first account. Passwords must be 12 to 72 UTF-8 bytes.
 3. Launch the Android app and grant **All files access**.
-4. Enter the server URL, email, and password, then sign in.
+4. Enter the server URL, tap **Open server login**, sign in in the browser, choose **Pair a new Android device**, and paste the one-time token into ASync.
 5. Select one small, nonessential folder for the first test.
 6. Start a manual sync and wait for the completion notification.
 7. Open the server web UI and verify the file, download, and version history.
@@ -187,12 +187,13 @@ See that repository's README for local Go tests, Docker image builds, FileBin en
 
 All API calls use `Authorization: Bearer <login token>` after login.
 
-1. `POST /api/login` authenticates the Android client.
-2. `POST /api/devices` creates a device record.
-3. `POST /api/uploads/prepare` receives device ID, relative POSIX path, byte size, and lowercase SHA-256.
-4. `GET upload_url` reads the received byte offset, then send sequential `PUT upload_url` chunks with `Content-Range` and a base64 SHA-256 `Digest`; repeat after interruptions.
-5. `POST commit_url` atomically makes a new immutable version.
-6. `GET /api/verify?path=...` rehashes the latest committed blob. Only then does the client record its seven-day deletion clock.
+1. Browser login creates a one-time pairing token with `POST /api/pairing`.
+2. Android exchanges it with `POST /api/pair` and receives a bearer token.
+3. `POST /api/devices` creates a device record.
+4. `POST /api/uploads/prepare` receives device ID, relative POSIX path, byte size, and lowercase SHA-256.
+5. `GET upload_url` reads the received byte offset, then send sequential `PUT upload_url` chunks with `Content-Range` and a base64 SHA-256 `Digest`; repeat after interruptions.
+6. `POST commit_url` atomically makes a new immutable version.
+7. `GET /api/verify?path=...` rehashes the latest committed blob. Only then does the client record its seven-day deletion clock.
 
 Every edited file gets a new remote version. Files unchanged by SHA-256 are not re-uploaded. The client re-verifies immediately before deleting an eligible local file.
 

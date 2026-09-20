@@ -44,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
         }
         restoreSettings();
         findViewById(R.id.grant_storage).setOnClickListener(v -> requestStorage());
+        findViewById(R.id.open_server_login).setOnClickListener(v -> openServerLogin());
         findViewById(R.id.sign_in).setOnClickListener(v -> signIn());
         findViewById(R.id.sync_now).setOnClickListener(v -> startSync());
         findViewById(R.id.save_folders).setOnClickListener(v -> saveFolders());
@@ -95,7 +96,6 @@ public class MainActivity extends AppCompatActivity {
     private void restoreSettings() {
         AppSettings settings = new AppSettings(this);
         ((EditText) findViewById(R.id.server_url)).setText(settings.serverUrl());
-        ((EditText) findViewById(R.id.email)).setText(settings.email());
         status.setText(settings.lastSyncStatus());
         ((CheckBox) findViewById(R.id.folder_dcim)).setChecked(settings.enabled("DCIM"));
         ((CheckBox) findViewById(R.id.folder_download)).setChecked(settings.enabled("Download"));
@@ -110,10 +110,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void signIn() {
         String url = ((EditText) findViewById(R.id.server_url)).getText().toString().trim();
-        String email = ((EditText) findViewById(R.id.email)).getText().toString().trim();
-        String password = ((EditText) findViewById(R.id.password)).getText().toString();
-        if (!url.startsWith("https://") || email.isEmpty() || password.isEmpty()) {
-            status.setText("Enter an HTTPS server URL, email, and password.");
+        String pairingToken = ((EditText) findViewById(R.id.pairing_token)).getText().toString().trim();
+        if (!url.startsWith("https://") || pairingToken.isEmpty()) {
+            status.setText("Enter an HTTPS server URL and pairing token.");
             return;
         }
         status.setText("Signing in...");
@@ -121,9 +120,9 @@ public class MainActivity extends AppCompatActivity {
         executor.execute(() -> {
             try {
                 ApiClient api = new ApiClient(url, null);
-                JSONObject response = api.post("/api/login", new JSONObject().put("email", email).put("password", password));
+                JSONObject response = api.post("/api/pair", new JSONObject().put("token", pairingToken));
                 AppSettings settings = new AppSettings(this);
-                settings.saveLogin(url, email, response.getString("token"));
+                settings.saveLogin(url, "", response.getString("token"));
                 if (settings.deviceId().isEmpty()) {
                     JSONObject device = api.withToken(response.getString("token")).post("/api/devices",
                             new JSONObject().put("name", android.os.Build.MODEL).put("platform", "android"));
@@ -131,10 +130,25 @@ public class MainActivity extends AppCompatActivity {
                     if (deviceId.isEmpty()) throw new Exception("device registration returned no device ID");
                     settings.saveDeviceId(deviceId);
                 }
+                runOnUiThread(() -> ((EditText) findViewById(R.id.pairing_token)).setText(""));
                 runOnUiThread(() -> status.setText("Signed in. Select folders and start sync."));
                 DebugLog.add(this, "Sign-in succeeded");
             } catch (Exception e) { DebugLog.add(this, "Sign-in failed: " + e.getMessage()); showError(e); }
         });
+    }
+
+    private void openServerLogin() {
+        String url = ((EditText) findViewById(R.id.server_url)).getText().toString().trim();
+        if (!url.startsWith("https://")) {
+            status.setText("Enter an HTTPS server URL first.");
+            return;
+        }
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url.replaceAll("/+$", "") + "/")));
+            DebugLog.add(this, "Opened server login in browser");
+        } catch (Exception error) {
+            status.setText("Could not open browser: " + error.getMessage());
+        }
     }
 
     private void exportSettings() {
@@ -158,15 +172,13 @@ public class MainActivity extends AppCompatActivity {
             if (requestCode == REQUEST_EXPORT_SETTINGS) {
                 JSONObject settings = new JSONObject();
                 settings.put("server_url", ((EditText) findViewById(R.id.server_url)).getText().toString().trim());
-                settings.put("email", ((EditText) findViewById(R.id.email)).getText().toString().trim());
-                settings.put("password", ((EditText) findViewById(R.id.password)).getText().toString());
                 settings.put("folders", folderSettings(false));
                 settings.put("auto_delete", folderSettings(true));
                 try (OutputStream output = getContentResolver().openOutputStream(data.getData())) {
                     if (output == null) throw new Exception("could not open export file");
                     output.write(settings.toString(2).getBytes(StandardCharsets.UTF_8));
                 }
-                status.setText("Settings exported. The file contains your password in plaintext.");
+                status.setText("Settings exported. Pairing tokens are intentionally not exported.");
                 DebugLog.add(this, "Settings exported");
             } else if (requestCode == REQUEST_IMPORT_SETTINGS) {
                 StringBuilder content = new StringBuilder();
@@ -177,8 +189,6 @@ public class MainActivity extends AppCompatActivity {
                 }
                 JSONObject settings = new JSONObject(content.toString());
                 ((EditText) findViewById(R.id.server_url)).setText(settings.optString("server_url", ""));
-                ((EditText) findViewById(R.id.email)).setText(settings.optString("email", ""));
-                ((EditText) findViewById(R.id.password)).setText(settings.optString("password", ""));
                 applyFolderSettings(settings.optJSONObject("folders"), false);
                 applyFolderSettings(settings.optJSONObject("auto_delete"), true);
                 saveFolders();
