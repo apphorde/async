@@ -37,6 +37,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(state);
         setContentView(R.layout.activity_main);
         status = findViewById(R.id.status);
+        DebugLog.add(this, "ASync build " + BuildConfig.BUILD_REVISION + " " + BuildConfig.BUILD_DATE);
+        ((TextView) findViewById(R.id.build_info)).setText("Build " + BuildConfig.BUILD_REVISION + " | " + BuildConfig.BUILD_DATE);
         if (android.os.Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, "android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{"android.permission.POST_NOTIFICATIONS"}, 2);
         }
@@ -103,6 +105,7 @@ public class MainActivity extends AppCompatActivity {
         ((CheckBox) findViewById(R.id.delete_download)).setChecked(settings.autoDelete("Download"));
         ((CheckBox) findViewById(R.id.delete_pictures)).setChecked(settings.autoDelete("Pictures"));
         ((CheckBox) findViewById(R.id.delete_movies)).setChecked(settings.autoDelete("Movies"));
+        ((CheckBox) findViewById(R.id.watch_enabled)).setChecked(settings.watchEnabled());
     }
 
     private void signIn() {
@@ -211,6 +214,7 @@ public class MainActivity extends AppCompatActivity {
         saveFolder(settings, "Download", R.id.folder_download, R.id.delete_download);
         saveFolder(settings, "Pictures", R.id.folder_pictures, R.id.delete_pictures);
         saveFolder(settings, "Movies", R.id.folder_movies, R.id.delete_movies);
+        settings.saveWatchEnabled(((CheckBox) findViewById(R.id.watch_enabled)).isChecked());
         status.setText("Folder settings saved.");
     }
 

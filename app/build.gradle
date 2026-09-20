@@ -2,9 +2,15 @@ plugins {
     id 'com.android.application'
 }
 
+def buildRevision = project.findProperty("buildRevision") ?: "dev"
+def buildDate = project.findProperty("buildDate") ?: "unknown"
+
 android {
     namespace 'com.example.storagereader'
     compileSdk 34
+    buildFeatures {
+        buildConfig true
+    }
 
     defaultConfig {
         applicationId "com.example.storagereader"
@@ -12,6 +18,9 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
+        buildConfigField "String", "BUILD_REVISION", "\"${buildRevision}\""
+        buildConfigField "String", "BUILD_DATE", "\"${buildDate}\""
+        manifestPlaceholders = [buildRevision: buildRevision, buildDate: buildDate]
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

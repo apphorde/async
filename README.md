@@ -87,6 +87,11 @@ The build script expects alias `androiddebugkey` and password `android` by
 default. `/run/secrets/reader-vault-debug.keystore` is only an example path
 inside the CI container; it does not need to exist on the development host.
 
+The build embeds the Git revision and UTC build time in the APK manifest and
+`BuildConfig`. Override `BUILD_REVISION` and `BUILD_DATE` in CI if the source
+checkout is not a Git repository. The values also appear in the in-app debug
+log.
+
 The APK is written to `app/build/outputs/apk/debug/app-debug.apk`. Install it with:
 
 ```sh

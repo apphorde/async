@@ -25,8 +25,11 @@
         <CheckBox android:id="@+id/delete_movies" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="24dp" android:text="Auto-delete Movies after 7 verified days" android:textSize="12sp" />
         <Button android:id="@+id/save_folders" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Save folders" />
         <Button android:id="@+id/sync_now" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sync now and schedule Wi-Fi sync" />
+        <CheckBox android:id="@+id/watch_enabled" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Watch folders for new files" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Uses a foreground notification and keeps the periodic scan as a safety net." android:textSize="12sp" />
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:text="Debug log" android:textStyle="bold" />
         <TextView android:id="@+id/debug_log" android:layout_width="match_parent" android:layout_height="160dp" android:layout_marginTop="8dp" android:background="?android:attr/colorBackground" android:gravity="top" android:padding="8dp" android:scrollbars="vertical" android:textColor="?android:attr/textColorPrimary" android:textSize="11sp" android:textIsSelectable="true" />
         <Button android:id="@+id/clear_debug_log" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Clear debug log" />
+        <TextView android:id="@+id/build_info" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textColor="?android:attr/textColorSecondary" android:textSize="11sp" />
     </LinearLayout>
 </ScrollView>
